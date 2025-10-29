@@ -35,8 +35,27 @@ class Autonoleggio:
             Funzione che legge tutte le automobili nel database
             :return: una lista con tutte le automobili presenti oppure None
         """
-
         # TODO
+        cnx = get_connection()
+        if cnx is None:
+            print("oh no")
+            return None
+        try:
+            cursor = cnx.cursor()
+            query= "SELECT * FROM automobile"
+            cursor.execute(query)
+            auto_list:list[Automobile] =[]
+            for (codice,marca,modello,anno,posti,disponibile) in cursor:
+                disp_bool=bool(disponibile)
+                auto_list.append(Automobile(codice, marca, modello, anno, posti, disp_bool))
+            return auto_list
+        except Exception as e:
+            print(e)
+            return None
+        finally:
+            cnx.close()
+
+
 
     def cerca_automobili_per_modello(self, modello) -> list[Automobile] | None:
         """
@@ -45,3 +64,44 @@ class Autonoleggio:
             :return: una lista con tutte le automobili di marca e modello indicato oppure None
         """
         # TODO
+        cnx = get_connection()
+        if cnx is None:
+            print("oh no")
+            return None
+
+        cursor = None
+        try:
+            cursor = cnx.cursor(dictionary=True)
+
+            query = """
+                    SELECT codice, marca, modello, anno, posti, disponibile
+                    FROM automobile
+                    WHERE modello LIKE %s
+                """
+            pattern = f"%{modello}%"
+            cursor.execute(query, (pattern,))
+            rows = cursor.fetchall()
+            auto_list: list[Automobile] = []
+            for r in rows:
+                auto_list.append(
+                    Automobile(
+                        r["codice"],
+                        r["marca"],
+                        r["modello"],
+                        r["anno"],
+                        r["posti"],
+                        bool(r["disponibile"]),
+                    )
+                )
+
+            return auto_list
+
+        except Exception as e:
+            print(e)
+            return None
+        finally:
+            try:
+                if cursor:
+                    cursor.close()
+            finally:
+                cnx.close()
